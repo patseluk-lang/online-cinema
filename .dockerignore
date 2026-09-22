@@ -1,0 +1,11 @@
+.git
+.venv
+venv
+.idea
+.vscode
+.env
+**/__pycache__
+**/*.pyc
+**/db.sqlite3
+online_cinema/staticfiles
+data/*.tmp

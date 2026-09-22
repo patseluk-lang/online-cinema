@@ -14,7 +14,7 @@ A Django catalogue of movies currently in theaters. An async scraper collects mo
 
 ## Tech stack
 
-Python 3.12+, Django 6.1, SQLite, aiohttp, BeautifulSoup, WhiteNoise.
+Python 3.14, Django 6.1, SQLite, aiohttp, BeautifulSoup, WhiteNoise, Gunicorn, Docker.
 
 ## Data flow
 
@@ -27,6 +27,7 @@ Rotten Tomatoes -> collector (aiohttp + BeautifulSoup) -> data/movies.json
 
 ```
 collector/collect_movies.py   async scraper, writes data/movies.json
+docker/entrypoint.sh          container start: migrate, import, run Gunicorn
 data/movies.json              collected data
 online_cinema/config/         Django settings and root URLs
 online_cinema/movies/         models, views, templates, import command, tests
@@ -60,6 +61,16 @@ python manage.py runserver
 
 Open http://127.0.0.1:8000/. By default `import_movies` reads `data/movies.json`; pass another path as an argument if needed.
 
+## Run with Docker
+
+```bash
+cp .env.example .env
+# edit .env: set DJANGO_SECRET_KEY and DJANGO_ALLOWED_HOSTS
+docker compose up -d --build
+```
+
+The site is served by Gunicorn on port 80. On start the container applies migrations and imports `data/movies.json`; the SQLite database is kept in the `db-data` volume.
+
 ## Run tests
 
 ```bash
@@ -86,6 +97,8 @@ The collector saves progress after every movie, so an interrupted run keeps what
 | `DJANGO_DEBUG` | `1` | Set to `0` in production |
 | `DJANGO_SECRET_KEY` | dev key | Required when `DJANGO_DEBUG=0` |
 | `DJANGO_ALLOWED_HOSTS` | `localhost,127.0.0.1` | Comma-separated host names |
+| `DJANGO_CSRF_TRUSTED_ORIGINS` | empty | Comma-separated origins, e.g. `http://203.0.113.10`, needed for admin login |
+| `DJANGO_DB_PATH` | `online_cinema/db.sqlite3` | SQLite file location |
 
 In production run `python manage.py collectstatic`; static files are served by WhiteNoise.
 

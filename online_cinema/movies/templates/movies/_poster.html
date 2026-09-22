@@ -1,0 +1,1 @@
+{% if movie.img_link %}<img class="poster" src="{{ movie.img_link }}" alt="{{ movie.title }} poster" loading="lazy" referrerpolicy="no-referrer">{% else %}<div class="poster poster-empty">{{ movie.title }}</div>{% endif %}

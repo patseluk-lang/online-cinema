@@ -1,0 +1,19 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Online Cinema{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'movies/style.css' %}">
+</head>
+<body>
+<header class="header">
+    <a class="logo" href="{% url 'movie_list' %}">Online Cinema</a>
+    <span class="tagline">Now in theaters</span>
+</header>
+<main class="page">{% block content %}{% endblock %}</main>
+<footer class="footer">
+    Movie data and posters: Rotten Tomatoes. Non-commercial educational project.
+</footer>
+</body>
+</html>

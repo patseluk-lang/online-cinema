@@ -2,6 +2,8 @@
 
 A Django catalogue of movies currently in theaters. An async scraper collects movies, genres and cast from Rotten Tomatoes, a management command loads them into SQLite, and the site lets you browse, search and filter the catalogue.
 
+**Live demo:** http://16.170.202.127/ (AWS EC2, Docker)
+
 ## Features
 
 - Movie catalogue with title search, genre filter and pagination
@@ -70,6 +72,20 @@ docker compose up -d --build
 ```
 
 The site is served by Gunicorn on port 80. On start the container applies migrations and imports `data/movies.json`; the SQLite database is kept in the `db-data` volume.
+
+## Deployment
+
+The live demo runs on AWS EC2 (t3.micro, Ubuntu 24.04, region eu-north-1) with Docker Compose:
+
+```bash
+git clone https://github.com/patseluk-lang/online-cinema.git
+cd online-cinema
+cp .env.example .env
+# set DJANGO_SECRET_KEY, DJANGO_ALLOWED_HOSTS and DJANGO_CSRF_TRUSTED_ORIGINS for the server address
+sudo docker compose up -d --build
+```
+
+The EC2 security group allows HTTP from anywhere and SSH only from the owner's IP address.
 
 ## Run tests
 

@@ -158,6 +158,13 @@ class ViewTests(TestCase):
         response = self.client.get(reverse("movie_list"), {"sort": "newest", "genre": genre.pk})
         self.assertEqual(self.titles(response), ["Quiet Harbor", "Old One"])
 
+    def test_movies_without_data_go_last(self):
+        genre = Genre.objects.get(name="Drama")
+        Movie.objects.create(title="No Data", genre=genre)
+        for sort in ("newest", "oldest", "shortest", "longest"):
+            response = self.client.get(reverse("movie_list"), {"sort": sort, "genre": genre.pk})
+            self.assertEqual(self.titles(response)[-1], "No Data", sort)
+
     def test_selected_sort_stays_selected(self):
         response = self.client.get(reverse("movie_list"), {"sort": "oldest"})
         self.assertContains(response, '<option value="oldest" selected>')

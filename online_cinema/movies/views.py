@@ -1,15 +1,17 @@
 from django.core.paginator import Paginator
+from django.db.models import F
 from django.shortcuts import get_object_or_404, render
 
 from .models import Actor, Genre, Movie
 
 MOVIES_PER_PAGE = 24
 
+# Movies without a year or runtime go to the end of the list in every sort order.
 SORT_OPTIONS = {
-    "newest": ("Newest", ["-year", "title"]),
-    "oldest": ("Oldest", ["year", "title"]),
-    "shortest": ("Shortest", ["duration", "title"]),
-    "longest": ("Longest", ["-duration", "title"]),
+    "newest": ("Newest", [F("year").desc(nulls_last=True), "title"]),
+    "oldest": ("Oldest", [F("year").asc(nulls_last=True), "title"]),
+    "shortest": ("Shortest", [F("duration").asc(nulls_last=True), "title"]),
+    "longest": ("Longest", [F("duration").desc(nulls_last=True), "title"]),
 }
 
 

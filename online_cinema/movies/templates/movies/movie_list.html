@@ -6,8 +6,12 @@
         <option value="">All genres</option>
         {% for genre in genres %}<option value="{{ genre.pk }}"{% if genre_id == genre.pk|stringformat:"d" %} selected{% endif %}>{{ genre.name }}</option>{% endfor %}
     </select>
+    <select name="sort" aria-label="Sort by">
+        <option value="">Sort by</option>
+        {% for key, label in sort_options %}<option value="{{ key }}"{% if sort == key %} selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
     <button type="submit">Show movies</button>
-    {% if query or genre_id %}<a class="reset" href="{% url 'movie_list' %}">Clear filters</a>{% endif %}
+    {% if query or genre_id or sort %}<a class="reset" href="{% url 'movie_list' %}">Clear filters</a>{% endif %}
 </form>
 
 <p class="count">{{ page.paginator.count }} movie{{ page.paginator.count|pluralize }} found</p>

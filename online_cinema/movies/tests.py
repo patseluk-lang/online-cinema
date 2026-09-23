@@ -5,6 +5,7 @@ from pathlib import Path
 
 from django.core.management import call_command
 from django.core.management.base import CommandError
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 
@@ -137,3 +138,58 @@ class ViewTests(TestCase):
     def test_missing_movie_returns_404(self):
         response = self.client.get(reverse("movie_detail", args=[9999]))
         self.assertEqual(response.status_code, 404)
+
+    def titles(self, response):
+        return [movie.title for movie in response.context["page"]]
+
+    def test_sort_by_duration(self):
+        genre = Genre.objects.get(name="Drama")
+        Movie.objects.create(title="Short One", year=2020, genre=genre, duration=80)
+        response = self.client.get(reverse("movie_list"), {"sort": "shortest", "genre": genre.pk})
+        self.assertEqual(self.titles(response), ["Short One", "Quiet Harbor"])
+        response = self.client.get(reverse("movie_list"), {"sort": "longest", "genre": genre.pk})
+        self.assertEqual(self.titles(response), ["Quiet Harbor", "Short One"])
+
+    def test_sort_by_year(self):
+        genre = Genre.objects.get(name="Drama")
+        Movie.objects.create(title="Old One", year=1999, genre=genre)
+        response = self.client.get(reverse("movie_list"), {"sort": "oldest", "genre": genre.pk})
+        self.assertEqual(self.titles(response), ["Old One", "Quiet Harbor"])
+        response = self.client.get(reverse("movie_list"), {"sort": "newest", "genre": genre.pk})
+        self.assertEqual(self.titles(response), ["Quiet Harbor", "Old One"])
+
+    def test_selected_sort_stays_selected(self):
+        response = self.client.get(reverse("movie_list"), {"sort": "oldest"})
+        self.assertContains(response, '<option value="oldest" selected>')
+
+    def test_invalid_sort_is_ignored(self):
+        response = self.client.get(reverse("movie_list"), {"sort": "abc"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["sort"], "")
+
+
+class AdminTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        genre = Genre.objects.create(name="Drama")
+        actor = Actor.objects.create(name="Jane Doe", birth_year=1980)
+        movie = Movie.objects.create(title="Quiet Harbor", year=2025, genre=genre,
+                                     img_link="https://example.com/poster.jpg")
+        movie.actors.add(actor)
+        cls.admin = get_user_model().objects.create_superuser("admin", "admin@example.com", "pass")
+
+    def setUp(self):
+        self.client.force_login(self.admin)
+
+    def test_changelists_open(self):
+        for model in ("genre", "actor", "movie"):
+            response = self.client.get(reverse(f"admin:movies_{model}_changelist"))
+            self.assertEqual(response.status_code, 200)
+
+    def test_movie_list_shows_poster_preview(self):
+        response = self.client.get(reverse("admin:movies_movie_changelist"))
+        self.assertContains(response, 'src="https://example.com/poster.jpg"')
+
+    def test_search_movie_by_actor_name(self):
+        response = self.client.get(reverse("admin:movies_movie_changelist"), {"q": "Jane"})
+        self.assertContains(response, "Quiet Harbor")

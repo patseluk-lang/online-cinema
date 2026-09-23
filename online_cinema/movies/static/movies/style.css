@@ -36,6 +36,9 @@ h1, h2 { font-family: Georgia, "Times New Roman", serif; font-weight: normal; }
 .facts { margin: 0; color: var(--muted); font-size: 0.9rem; }
 .facts span + span::before { content: " / "; }
 
+.back { display: inline-block; margin-bottom: 20px; color: var(--text); text-decoration: none; }
+.back:hover { color: var(--accent); }
+
 .pagination { display: flex; justify-content: center; gap: 20px; margin: 40px 0 0; }
 .empty { grid-column: 1 / -1; }
 

@@ -1,6 +1,7 @@
 {% extends "movies/base.html" %}
 {% block title %}{{ movie.title }} | Online Cinema{% endblock %}
 {% block content %}
+<a class="back" href="{% url 'movie_list' %}" onclick="if (history.length > 1 && document.referrer.startsWith(location.origin + '/')) { history.back(); return false; }">&larr; Back</a>
 <article class="detail">
     {% include "movies/_poster.html" %}
     <div class="detail-body">

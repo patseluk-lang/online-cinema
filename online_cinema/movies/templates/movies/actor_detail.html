@@ -1,6 +1,7 @@
 {% extends "movies/base.html" %}
 {% block title %}{{ actor.name }} | Online Cinema{% endblock %}
 {% block content %}
+<a class="back" href="{% url 'movie_list' %}" onclick="if (history.length > 1 && document.referrer.startsWith(location.origin + '/')) { history.back(); return false; }">&larr; Back</a>
 <h1>{{ actor.name }}</h1>
 {% if actor.birth_year %}<p class="muted">Born {{ actor.birth_year }}</p>{% endif %}
 <h2>Movies in this catalogue</h2>

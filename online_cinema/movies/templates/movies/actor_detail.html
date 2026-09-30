@@ -1,17 +1,17 @@
 {% extends "movies/base.html" %}
-{% block title %}{{ actor.name }} | Online Cinema{% endblock %}
+{% block title %}{{ actor.name }} - Online Cinema{% endblock %}
 {% block content %}
-<a class="back" href="{% url 'movie_list' %}" onclick="if (history.length > 1 && document.referrer.startsWith(location.origin + '/')) { history.back(); return false; }">&larr; Back</a>
-<h1>{{ actor.name }}</h1>
-{% if actor.birth_year %}<p class="muted">Born {{ actor.birth_year }}</p>{% endif %}
-<h2>Movies in this catalogue</h2>
-<div class="grid">
+<a class="back-link" href="{% url 'movie_list' %}" onclick="if (history.length > 1 && document.referrer.startsWith(location.origin + '/')) { history.back(); return false; }">← Назад</a>
+
+<section class="page-header">
+    <h1>{{ actor.name }}</h1>
+    {% if actor.birth_year %}<p>Рік народження: {{ actor.birth_year }}</p>{% endif %}
+</section>
+
+<h2>Фільми в каталозі</h2>
+<section class="movie-grid">
 {% for movie in movies %}
-    <a class="card" href="{{ movie.get_absolute_url }}">
-        {% include "movies/_poster.html" %}
-        <h2>{{ movie.title }}</h2>
-        {% include "movies/_facts.html" %}
-    </a>
+    {% include "movies/_card.html" %}
 {% endfor %}
-</div>
+</section>
 {% endblock %}

@@ -50,7 +50,11 @@ def movie_detail(request, pk):
     movie = get_object_or_404(
         Movie.objects.select_related("genre").prefetch_related("actors"), pk=pk
     )
-    return render(request, "movies/movie_detail.html", {"movie": movie})
+    is_favorite = (
+        request.user.is_authenticated
+        and movie.favorited_by.filter(user=request.user).exists()
+    )
+    return render(request, "movies/movie_detail.html", {"movie": movie, "is_favorite": is_favorite})
 
 
 def actor_detail(request, pk):

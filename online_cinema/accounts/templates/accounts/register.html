@@ -1,0 +1,15 @@
+{% extends "movies/base.html" %}
+{% block title %}Реєстрація - Online Cinema{% endblock %}
+{% block content %}
+<section class="auth-box">
+    <h1>Створити акаунт</h1>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="button">Зареєструватися</button>
+    </form>
+
+    <p>Вже маєте акаунт? <a href="{% url 'login' %}">Увійти</a></p>
+</section>
+{% endblock %}

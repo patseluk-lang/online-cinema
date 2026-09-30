@@ -1,20 +1,54 @@
 {% extends "movies/base.html" %}
-{% block title %}{{ movie.title }} | Online Cinema{% endblock %}
+{% block title %}{{ movie.title }} - Online Cinema{% endblock %}
 {% block content %}
-<a class="back" href="{% url 'movie_list' %}" onclick="if (history.length > 1 && document.referrer.startsWith(location.origin + '/')) { history.back(); return false; }">&larr; Back</a>
-<article class="detail">
-    {% include "movies/_poster.html" %}
-    <div class="detail-body">
-        <h1>{{ movie.title }}</h1>
-        {% include "movies/_facts.html" %}
-        {% if movie.description %}<p class="description">{{ movie.description }}</p>{% endif %}
-        <h2>Cast</h2>
-        {% with actors=movie.actors.all %}
-        {% if actors %}
-        <ul class="cast">{% for actor in actors %}<li><a href="{{ actor.get_absolute_url }}">{{ actor.name }}</a>{% if actor.birth_year %} <span class="muted">b. {{ actor.birth_year }}</span>{% endif %}</li>{% endfor %}</ul>
-        {% else %}<p class="muted">No cast information for this movie.</p>{% endif %}
-        {% endwith %}
-        {% if movie.url %}<p><a href="{{ movie.url }}" rel="noopener">View on Rotten Tomatoes</a></p>{% endif %}
+<a class="back-link" href="{% url 'movie_list' %}" onclick="if (history.length > 1 && document.referrer.startsWith(location.origin + '/')) { history.back(); return false; }">← До каталогу</a>
+
+<section class="movie-detail">
+    <div class="movie-detail-poster">
+        {% include "movies/_poster.html" %}
     </div>
-</article>
+
+    <div class="movie-detail-info">
+        <h1>{{ movie.title }}</h1>
+
+        <div class="movie-meta">
+            {% if movie.year %}<span>📅 {{ movie.year }}</span>{% endif %}
+            {% if movie.genre %}<span>🎭 {{ movie.genre.name }}</span>{% endif %}
+            {% if movie.duration %}<span>⏱ {{ movie.duration }} хв.</span>{% endif %}
+        </div>
+
+        {% if movie.description %}
+        <h2>Опис</h2>
+        <p class="movie-description">{{ movie.description }}</p>
+        {% endif %}
+
+        {% if movie.url %}<p><a class="source-link" href="{{ movie.url }}" rel="noopener">Переглянути на Rotten Tomatoes</a></p>{% endif %}
+    </div>
+
+    <div class="movie-detail-actions">
+        {% if user.is_authenticated %}
+            <form method="post" action="{% url 'toggle_favorite' movie.pk %}">
+                {% csrf_token %}
+                {% if is_favorite %}
+                    <button type="submit" class="button button-favorite active">❤️ В обраному</button>
+                {% else %}
+                    <button type="submit" class="button button-favorite">🤍 Додати в обране</button>
+                {% endif %}
+            </form>
+        {% else %}
+            <a class="button" href="{% url 'login' %}?next={{ request.path|urlencode }}">🔑 Увійдіть, щоб додати в обране</a>
+        {% endif %}
+    </div>
+</section>
+
+<section class="actors-section">
+    <h2>🎭 Актори</h2>
+    <div class="actors-list">
+        {% for actor in movie.actors.all %}
+            <a class="actor-card" href="{{ actor.get_absolute_url }}"><strong>{{ actor.name }}</strong></a>
+        {% empty %}
+            <p>Інформації про акторів немає</p>
+        {% endfor %}
+    </div>
+</section>
 {% endblock %}

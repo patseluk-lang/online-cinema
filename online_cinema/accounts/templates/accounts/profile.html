@@ -1,0 +1,22 @@
+{% extends "movies/base.html" %}
+{% block title %}Мій профіль - Online Cinema{% endblock %}
+{% block content %}
+<a class="back-link" href="{% url 'movie_list' %}">← До каталогу</a>
+
+<section class="page-header">
+    <h1>Мій профіль</h1>
+    <h2>Вітаємо, {{ user.username }}</h2>
+    {% if user.email %}<p>Email: {{ user.email }}</p>{% endif %}
+</section>
+
+<h2>❤️ Мої улюблені фільми</h2>
+{% if favorites %}
+<section class="movie-grid">
+    {% for favorite in favorites %}
+        {% with movie=favorite.movie %}{% include "movies/_card.html" %}{% endwith %}
+    {% endfor %}
+</section>
+{% else %}
+<p>Ви ще не додали жодного фільму в обране</p>
+{% endif %}
+{% endblock %}

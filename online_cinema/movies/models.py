@@ -46,10 +46,3 @@ class Movie(models.Model):
 
     def get_absolute_url(self):
         return reverse("movie_detail", args=[self.pk])
-
-    @property
-    def duration_display(self):
-        if not self.duration:
-            return ""
-        hours, minutes = divmod(self.duration, 60)
-        return f"{hours}h {minutes:02d}m" if hours else f"{minutes}m"

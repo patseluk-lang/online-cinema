@@ -1,0 +1,7 @@
+<a class="movie-card" href="{{ movie.get_absolute_url }}">
+    {% include "movies/_poster.html" %}
+    <div class="movie-card-body">
+        <h2>{{ movie.title }}</h2>
+        {% include "movies/_facts.html" %}
+    </div>
+</a>

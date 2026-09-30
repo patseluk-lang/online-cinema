@@ -127,13 +127,18 @@ class ViewTests(TestCase):
     def test_movie_detail(self):
         response = self.client.get(self.drama_movie.get_absolute_url())
         self.assertContains(response, "Quiet Harbor")
-        self.assertContains(response, "2h 05m")
+        self.assertContains(response, "125 хв.")
         self.assertContains(response, self.actor.get_absolute_url())
 
     def test_actor_detail_lists_movies(self):
         response = self.client.get(self.actor.get_absolute_url())
         self.assertContains(response, "Quiet Harbor")
         self.assertNotContains(response, "Loud Neighbors")
+
+    def test_movie_detail_for_guest_offers_login(self):
+        response = self.client.get(self.drama_movie.get_absolute_url())
+        self.assertContains(response, reverse("login") + "?next=")
+        self.assertNotContains(response, reverse("toggle_favorite", args=[self.drama_movie.pk]))
 
     def test_missing_movie_returns_404(self):
         response = self.client.get(reverse("movie_detail", args=[9999]))

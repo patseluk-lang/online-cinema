@@ -1,1 +1,3 @@
-<p class="facts">{% if movie.year %}<span>{{ movie.year }}</span>{% endif %}{% if movie.genre %}<span>{{ movie.genre }}</span>{% endif %}{% if movie.duration %}<span>{{ movie.duration_display }}</span>{% endif %}</p>
+{% if movie.year %}<p>{{ movie.year }}</p>{% endif %}
+{% if movie.genre %}<p>{{ movie.genre.name }}</p>{% endif %}
+{% if movie.duration %}<p>{{ movie.duration }} min</p>{% endif %}

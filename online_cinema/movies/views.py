@@ -2,6 +2,8 @@ from django.core.paginator import Paginator
 from django.db.models import F
 from django.shortcuts import get_object_or_404, render
 
+from interactions.models import rating_summary
+
 from .models import Actor, Genre, Movie
 
 MOVIES_PER_PAGE = 24
@@ -50,11 +52,18 @@ def movie_detail(request, pk):
     movie = get_object_or_404(
         Movie.objects.select_related("genre").prefetch_related("actors"), pk=pk
     )
-    is_favorite = (
-        request.user.is_authenticated
-        and movie.favorited_by.filter(user=request.user).exists()
-    )
-    return render(request, "movies/movie_detail.html", {"movie": movie, "is_favorite": is_favorite})
+    is_favorite = False
+    user_rating = None
+    if request.user.is_authenticated:
+        is_favorite = movie.favorited_by.filter(user=request.user).exists()
+        user_rating = movie.ratings.filter(user=request.user).first()
+
+    return render(request, "movies/movie_detail.html", {
+        "movie": movie,
+        "is_favorite": is_favorite,
+        "rating": rating_summary(movie),
+        "user_rating": user_rating,
+    })
 
 
 def actor_detail(request, pk):

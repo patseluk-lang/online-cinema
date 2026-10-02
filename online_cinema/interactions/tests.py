@@ -5,7 +5,7 @@ from django.urls import reverse
 
 from movies.models import Genre, Movie
 
-from .models import Favorite
+from .models import Favorite, Rating, WatchHistory
 
 
 class ToggleFavoriteTests(TestCase):
@@ -58,3 +58,101 @@ class ToggleFavoriteTests(TestCase):
         self.client.force_login(admin)
         response = self.client.get(reverse("admin:interactions_favorite_changelist"))
         self.assertContains(response, "Quiet Harbor")
+
+
+class WatchTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user("bob", password="Str0ng-pass-2026")
+        genre = Genre.objects.create(name="Drama")
+        cls.movie = Movie.objects.create(title="Quiet Harbor", year=2025, genre=genre, duration=97)
+        cls.no_runtime = Movie.objects.create(title="No Runtime", year=2025, genre=genre)
+
+    def setUp(self):
+        self.client.force_login(self.user)
+
+    def test_watch_returns_demo_seconds(self):
+        response = self.client.get(reverse("watch_movie", args=[self.movie.pk]))
+        self.assertEqual(response.json()["watch_seconds"], 10)
+
+    def test_movie_without_runtime_does_not_crash(self):
+        response = self.client.get(reverse("watch_movie", args=[self.no_runtime.pk]))
+        self.assertEqual(response.json()["watch_seconds"], 1)
+
+    def test_complete_watch_adds_history(self):
+        url = reverse("complete_watch", args=[self.movie.pk])
+        self.assertEqual(self.client.get(url).status_code, 405)
+        response = self.client.post(url)
+        self.assertTrue(response.json()["success"])
+        item = WatchHistory.objects.get()
+        self.assertEqual((item.user, item.movie, item.watch_duration), (self.user, self.movie, 10))
+
+    def test_guest_cannot_watch(self):
+        self.client.logout()
+        response = self.client.post(reverse("complete_watch", args=[self.movie.pk]))
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(WatchHistory.objects.exists())
+
+    def test_profile_shows_history(self):
+        WatchHistory.objects.create(user=self.user, movie=self.movie, watch_duration=10)
+        response = self.client.get(reverse("profile"))
+        self.assertContains(response, "Переглянуто: 10 сек.")
+
+
+class RatingTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.bob = User.objects.create_user("bob", password="Str0ng-pass-2026")
+        cls.ann = User.objects.create_user("ann", password="Str0ng-pass-2026")
+        genre = Genre.objects.create(name="Drama")
+        cls.movie = Movie.objects.create(title="Quiet Harbor", year=2025, genre=genre)
+        cls.url = reverse("rate_movie", args=[cls.movie.pk])
+
+    def rate(self, user, value):
+        self.client.force_login(user)
+        return self.client.post(self.url, {"rating": value})
+
+    def test_rating_is_saved_and_updated(self):
+        self.assertTrue(self.rate(self.bob, "4").json()["created"])
+        data = self.rate(self.bob, "2").json()
+        self.assertFalse(data["created"])
+        self.assertEqual(Rating.objects.get().value, 2)
+        self.assertEqual((data["average"], data["count"]), (2, 1))
+
+    def test_average_over_users(self):
+        self.rate(self.bob, "4")
+        data = self.rate(self.ann, "3").json()
+        self.assertEqual((data["average"], data["count"]), (3.5, 2))
+        response = self.client.get(self.movie.get_absolute_url())
+        self.assertContains(response, "⭐ 3.5")
+
+    def test_invalid_values_are_rejected(self):
+        for value in ("0", "6", "abc", ""):
+            response = self.rate(self.bob, value)
+            self.assertEqual(response.status_code, 400, value)
+        self.assertFalse(Rating.objects.exists())
+
+    def test_guest_cannot_rate(self):
+        response = self.client.post(self.url, {"rating": "5"})
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(Rating.objects.exists())
+
+    def test_detail_marks_users_stars(self):
+        self.rate(self.bob, "3")
+        response = self.client.get(self.movie.get_absolute_url())
+        self.assertContains(response, "3/5")
+        self.assertEqual(response.content.decode().count("rating-button active"), 3)
+
+    def test_movie_without_ratings(self):
+        response = self.client.get(self.movie.get_absolute_url())
+        self.assertContains(response, "Немає оцінок")
+        self.assertContains(response, "Увійдіть, щоб оцінити фільм")
+
+    def test_admin_changelists_open(self):
+        admin = User.objects.create_superuser("admin", "admin@example.com", "pass")
+        self.rate(self.bob, "5")
+        WatchHistory.objects.create(user=self.bob, movie=self.movie, watch_duration=1)
+        self.client.force_login(admin)
+        for model in ("rating", "watchhistory"):
+            response = self.client.get(reverse(f"admin:interactions_{model}_changelist"))
+            self.assertContains(response, "Quiet Harbor")

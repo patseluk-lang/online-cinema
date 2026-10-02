@@ -93,7 +93,7 @@ class ProfileTests(TestCase):
     def test_profile_lists_only_own_favorites(self):
         self.client.force_login(self.user)
         response = self.client.get(reverse("profile"))
-        self.assertContains(response, "Вітаємо, bob")
+        self.assertContains(response, "👤 bob")
         self.assertContains(response, "Quiet Harbor")
         self.assertNotContains(response, "Not Liked")
 
@@ -102,3 +102,4 @@ class ProfileTests(TestCase):
         self.client.force_login(other)
         response = self.client.get(reverse("profile"))
         self.assertContains(response, "Ви ще не додали жодного фільму в обране")
+        self.assertContains(response, "Історія переглядів порожня")

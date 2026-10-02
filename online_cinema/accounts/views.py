@@ -57,5 +57,9 @@ def logout_view(request):
 
 @login_required
 def profile(request):
-    favorites = request.user.favorites.select_related("movie__genre").order_by("-created_at")
-    return render(request, "accounts/profile.html", {"favorites": favorites})
+    favorites = request.user.favorites.select_related("movie").order_by("-created_at")
+    watch_history = request.user.watch_history.select_related("movie")
+    return render(request, "accounts/profile.html", {
+        "favorites": favorites,
+        "watch_history": watch_history,
+    })

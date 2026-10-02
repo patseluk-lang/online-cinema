@@ -25,20 +25,58 @@
         {% if movie.url %}<p><a class="source-link" href="{{ movie.url }}" rel="noopener">Переглянути на Rotten Tomatoes</a></p>{% endif %}
     </div>
 
-    <div class="movie-detail-actions">
-        {% if user.is_authenticated %}
-            <form method="post" action="{% url 'toggle_favorite' movie.pk %}">
-                {% csrf_token %}
-                {% if is_favorite %}
-                    <button type="submit" class="button button-favorite active">❤️ В обраному</button>
-                {% else %}
-                    <button type="submit" class="button button-favorite">🤍 Додати в обране</button>
-                {% endif %}
-            </form>
-        {% else %}
-            <a class="button" href="{% url 'login' %}?next={{ request.path|urlencode }}">🔑 Увійдіть, щоб додати в обране</a>
-        {% endif %}
+    {% if user.is_authenticated %}
+        <div class="watch-box">
+            <button type="button" class="button button-watch" id="watch-button">▶️ Переглянути</button>
+            <div id="watch-player" class="watch-player" hidden>
+                <h3>▶️ {{ movie.title }}</h3>
+                <div class="progress-container">
+                    <div id="watch-progress" class="progress-bar"></div>
+                </div>
+                <p id="watch-status">Підготовка до перегляду...</p>
+            </div>
+        </div>
+
+        <form class="favorite-form" method="post" action="{% url 'toggle_favorite' movie.pk %}">
+            {% csrf_token %}
+            {% if is_favorite %}
+                <button type="submit" class="button button-favorite active">❤️ В обраному</button>
+            {% else %}
+                <button type="submit" class="button button-favorite">🤍 Додати в обране</button>
+            {% endif %}
+        </form>
+    {% else %}
+        <div class="watch-box">
+            <a class="button" href="{% url 'login' %}?next={{ request.path|urlencode }}">🔑 Увійдіть, щоб переглянути та додати в обране</a>
+        </div>
+    {% endif %}
+</section>
+
+<section class="rating-section">
+    <h2>⭐ Оцінка фільму</h2>
+
+    <div class="rating-summary">
+        <div class="rating-average" id="rating-average">
+            {% if rating.average is not None %}⭐ {{ rating.average|floatformat:1 }}{% else %}⭐ Немає оцінок{% endif %}
+        </div>
+        <div class="rating-count">👥 Оцінок: <span id="rating-count">{{ rating.count }}</span></div>
     </div>
+
+    {% if user.is_authenticated %}
+        <div class="user-rating">
+            <p>Ваша оцінка:</p>
+            <div class="rating-buttons">
+                {% for number in "12345" %}
+                    <button type="button" class="rating-button{% if user_rating and user_rating.value >= forloop.counter %} active{% endif %}" data-rating="{{ number }}" aria-label="Оцінка {{ number }} з 5">⭐</button>
+                {% endfor %}
+            </div>
+            <p id="rating-message">
+                {% if user_rating %}{{ user_rating.value }}/5{% else %}Ви ще не оцінювали цей фільм{% endif %}
+            </p>
+        </div>
+    {% else %}
+        <p><a class="source-link" href="{% url 'login' %}?next={{ request.path|urlencode }}">🔐 Увійдіть, щоб оцінити фільм.</a></p>
+    {% endif %}
 </section>
 
 <section class="actors-section">
@@ -51,4 +89,91 @@
         {% endfor %}
     </div>
 </section>
+{% endblock %}
+
+{% block extra_js %}
+{% if user.is_authenticated %}
+<script>
+    const csrfToken = "{{ csrf_token }}";
+
+    const watchButton = document.getElementById("watch-button");
+    const watchPlayer = document.getElementById("watch-player");
+    const watchProgress = document.getElementById("watch-progress");
+    const watchStatus = document.getElementById("watch-status");
+
+    watchButton.addEventListener("click", async () => {
+        watchButton.disabled = true;
+        watchButton.textContent = "▶️ Завантаження...";
+
+        try {
+            const response = await fetch("{% url 'watch_movie' movie.pk %}");
+            if (!response.ok) throw new Error();
+            const data = await response.json();
+            const totalSeconds = data.watch_seconds;
+            let currentSecond = 0;
+
+            watchButton.hidden = true;
+            watchPlayer.hidden = false;
+            watchStatus.textContent = `Залишилось: ${totalSeconds} сек.`;
+
+            const timer = setInterval(async () => {
+                currentSecond++;
+                watchProgress.style.width = `${(currentSecond / totalSeconds) * 100}%`;
+
+                const remaining = totalSeconds - currentSecond;
+                if (remaining > 0) {
+                    watchStatus.textContent = `Перегляд... Залишилось: ${remaining} сек.`;
+                    return;
+                }
+
+                clearInterval(timer);
+                watchStatus.textContent = "Перегляд завершено!";
+
+                const completeResponse = await fetch("{% url 'complete_watch' movie.pk %}", {
+                    method: "POST",
+                    headers: {"X-CSRFToken": csrfToken},
+                });
+                const result = await completeResponse.json();
+                if (result.success) {
+                    watchStatus.textContent = result.message;
+                }
+            }, 1000);
+        } catch (error) {
+            watchButton.disabled = false;
+            watchButton.textContent = "▶️ Не вдалося. Спробувати ще раз";
+        }
+    });
+
+    const ratingButtons = document.querySelectorAll(".rating-button");
+    const ratingMessage = document.getElementById("rating-message");
+    const ratingAverage = document.getElementById("rating-average");
+    const ratingCount = document.getElementById("rating-count");
+
+    ratingButtons.forEach((button) => {
+        button.addEventListener("click", async () => {
+            const formData = new FormData();
+            formData.append("rating", button.dataset.rating);
+
+            const response = await fetch("{% url 'rate_movie' movie.pk %}", {
+                method: "POST",
+                headers: {"X-CSRFToken": csrfToken},
+                body: formData,
+            });
+            const data = await response.json();
+
+            if (!data.success) {
+                ratingMessage.textContent = data.error;
+                return;
+            }
+
+            ratingMessage.textContent = `Ваша оцінка: ${data.value}/5`;
+            ratingAverage.textContent = `⭐ ${data.average.toFixed(1)}`;
+            ratingCount.textContent = data.count;
+            ratingButtons.forEach((star) => {
+                star.classList.toggle("active", Number(star.dataset.rating) <= data.value);
+            });
+        });
+    });
+</script>
+{% endif %}
 {% endblock %}

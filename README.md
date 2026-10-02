@@ -1,6 +1,6 @@
 # Online Cinema
 
-A Django catalogue of movies currently in theaters. An async scraper collects movies, genres and cast from Rotten Tomatoes, a management command loads them into SQLite or PostgreSQL, and the site lets you browse, search, filter and sort the catalogue, register and keep a list of favorite movies.
+A Django catalogue of movies currently in theaters. An async scraper collects movies, genres and cast from Rotten Tomatoes, a management command loads them into SQLite or PostgreSQL, and the site lets you browse, search, filter and sort the catalogue, register, rate movies and keep favorites and a watch history.
 
 **Live demo:** http://16.170.202.127/ (AWS EC2, Docker)
 
@@ -10,11 +10,14 @@ A Django catalogue of movies currently in theaters. An async scraper collects mo
 - Movie pages with description, runtime and cast
 - User accounts: registration (with password validation), login, logout
 - Favorites: logged-in users add or remove movies from favorites on the movie page and see them in their profile
+- Movie ratings from 1 to 5 stars with the average score and number of votes (AJAX, no page reload)
+- Demo viewing: a "Watch" button runs a short progress bar and records the view in the user's watch history
+- Profile page with favorite movies and watch history
 - Actor pages listing every movie of that actor in the catalogue
 - Idempotent import: re-running it updates existing records instead of duplicating them
 - Actors and movies are matched by their source URL, so namesakes stay separate
 - Django admin with poster previews, movie and actor counts, search (including by actor name) and filters
-- Test suite for the importer, all views, accounts, favorites and the admin
+- Test suite for the importer, all views, accounts, favorites, ratings, watch history and the admin
 
 ## Tech stack
 
@@ -36,7 +39,7 @@ data/movies.json              collected data
 online_cinema/config/         Django settings and root URLs
 online_cinema/movies/         models, views, templates, import command, tests
 online_cinema/accounts/       registration, login, logout, profile
-online_cinema/interactions/   favorites (model, toggle view, admin)
+online_cinema/interactions/   favorites, ratings, watch history (models, views, admin)
 ```
 
 ## Run locally

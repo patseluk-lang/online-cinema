@@ -1,22 +1,59 @@
 {% extends "movies/base.html" %}
 {% block title %}Мій профіль - Online Cinema{% endblock %}
 {% block content %}
-<a class="back-link" href="{% url 'movie_list' %}">← До каталогу</a>
-
-<section class="page-header">
-    <h1>Мій профіль</h1>
-    <h2>Вітаємо, {{ user.username }}</h2>
-    {% if user.email %}<p>Email: {{ user.email }}</p>{% endif %}
+<section class="profile-header">
+    <h1>👤 {{ user.username }}</h1>
+    {% if user.email %}<p>{{ user.email }}</p>{% endif %}
 </section>
 
-<h2>❤️ Мої улюблені фільми</h2>
-{% if favorites %}
-<section class="movie-grid">
-    {% for favorite in favorites %}
-        {% with movie=favorite.movie %}{% include "movies/_card.html" %}{% endwith %}
-    {% endfor %}
+<section class="profile-section">
+    <h2>❤️ Мої улюблені фільми</h2>
+    {% if favorites %}
+        <div class="movie-grid">
+            {% for favorite in favorites %}
+                {% with movie=favorite.movie %}
+                <a class="movie-card" href="{{ movie.get_absolute_url }}">
+                    {% include "movies/_poster.html" %}
+                    <div class="movie-card-body">
+                        <h2>{{ movie.title }}</h2>
+                        {% if movie.year %}<p>{{ movie.year }}</p>{% endif %}
+                    </div>
+                </a>
+                {% endwith %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <h3>❤️ Тут поки порожньо</h3>
+            <p>Ви ще не додали жодного фільму в обране</p>
+            <a class="button" href="{% url 'movie_list' %}">Перейти до фільмів</a>
+        </div>
+    {% endif %}
 </section>
-{% else %}
-<p>Ви ще не додали жодного фільму в обране</p>
-{% endif %}
+
+<section class="profile-section">
+    <h2>👀 Історія переглядів</h2>
+    {% if watch_history %}
+        <div class="history-list">
+            {% for item in watch_history %}
+                {% with movie=item.movie %}
+                <div class="history-item">
+                    <a class="history-poster" href="{{ movie.get_absolute_url }}">{% include "movies/_poster.html" %}</a>
+                    <div class="history-info">
+                        <h3><a href="{{ movie.get_absolute_url }}">{{ movie.title }}</a></h3>
+                        <p>📅 {{ item.watched_at|date:"d.m.Y H:i" }}</p>
+                        <p>⏱ Переглянуто: {{ item.watch_duration }} сек.</p>
+                    </div>
+                </div>
+                {% endwith %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <h3>👀 Історія переглядів порожня</h3>
+            <p>Перегляньте який-небудь фільм</p>
+            <a class="button" href="{% url 'movie_list' %}">Перейти до фільмів</a>
+        </div>
+    {% endif %}
+</section>
 {% endblock %}

@@ -63,6 +63,8 @@ def movie_detail(request, pk):
         "is_favorite": is_favorite,
         "rating": rating_summary(movie),
         "user_rating": user_rating,
+        "comments": movie.comments.filter(parent__isnull=True)
+        .select_related("user").prefetch_related("replies__user"),
     })
 
 

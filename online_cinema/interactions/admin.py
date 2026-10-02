@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Favorite, Rating, WatchHistory
+from .models import Comment, Favorite, Rating, WatchHistory
 
 
 @admin.register(Favorite)
@@ -25,3 +25,16 @@ class RatingAdmin(admin.ModelAdmin):
     list_filter = ["value", "created_at"]
     search_fields = ["user__username", "movie__title"]
     list_select_related = ["user", "movie"]
+
+
+@admin.register(Comment)
+class CommentAdmin(admin.ModelAdmin):
+    list_display = ["user", "movie", "parent", "text_preview", "created_at"]
+    list_filter = ["created_at"]
+    search_fields = ["user__username", "movie__title", "text"]
+    list_select_related = ["user", "movie", "parent__user"]
+    raw_id_fields = ["parent"]
+
+    @admin.display(description="Коментар")
+    def text_preview(self, obj):
+        return obj.text[:30]

@@ -5,7 +5,7 @@ from django.urls import reverse
 
 from movies.models import Genre, Movie
 
-from .models import Favorite, Rating, WatchHistory
+from .models import Comment, Favorite, Rating, WatchHistory
 
 
 class ToggleFavoriteTests(TestCase):
@@ -156,3 +156,101 @@ class RatingTests(TestCase):
         for model in ("rating", "watchhistory"):
             response = self.client.get(reverse(f"admin:interactions_{model}_changelist"))
             self.assertContains(response, "Quiet Harbor")
+
+
+class CommentTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.bob = User.objects.create_user("bob", password="Str0ng-pass-2026")
+        cls.ann = User.objects.create_user("ann", password="Str0ng-pass-2026")
+        genre = Genre.objects.create(name="Drama")
+        cls.movie = Movie.objects.create(title="Quiet Harbor", year=2025, genre=genre)
+        cls.other_movie = Movie.objects.create(title="Loud Neighbors", year=2025, genre=genre)
+
+    def comment(self, user=None, text="Great film", parent=None):
+        return Comment.objects.create(user=user or self.bob, movie=self.movie, text=text, parent=parent)
+
+    def test_add_comment(self):
+        self.client.force_login(self.bob)
+        response = self.client.post(reverse("add_comment", args=[self.movie.pk]), {"text": "Great film"})
+        self.assertRedirects(response, self.movie.get_absolute_url() + "#comments")
+        self.assertEqual(Comment.objects.get().user, self.bob)
+
+    def test_empty_comment_is_ignored(self):
+        self.client.force_login(self.bob)
+        self.client.post(reverse("add_comment", args=[self.movie.pk]), {"text": "   "})
+        self.assertFalse(Comment.objects.exists())
+
+    def test_guest_cannot_comment(self):
+        response = self.client.post(reverse("add_comment", args=[self.movie.pk]), {"text": "Hi"})
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(Comment.objects.exists())
+
+    def test_reply_to_reply_stays_one_level_deep(self):
+        top = self.comment()
+        self.client.force_login(self.ann)
+        url = reverse("add_reply", args=[self.movie.pk, top.pk])
+        self.assertTrue(self.client.post(url, {"text": "Agree"}).json()["success"])
+        reply = Comment.objects.get(text="Agree")
+        self.assertEqual(reply.parent, top)
+
+        url = reverse("add_reply", args=[self.movie.pk, reply.pk])
+        self.client.post(url, {"text": "Me too"})
+        self.assertEqual(Comment.objects.get(text="Me too").parent, top)
+
+    def test_reply_to_comment_of_other_movie_is_404(self):
+        top = self.comment()
+        self.client.force_login(self.ann)
+        response = self.client.post(reverse("add_reply", args=[self.other_movie.pk, top.pk]), {"text": "x"})
+        self.assertEqual(response.status_code, 404)
+
+    def test_owner_can_edit_and_delete(self):
+        comment = self.comment()
+        self.client.force_login(self.bob)
+        data = self.client.post(reverse("edit_comment", args=[comment.pk]), {"text": "Changed"}).json()
+        self.assertEqual(data["text"], "Changed")
+        self.assertEqual(Comment.objects.get().text, "Changed")
+        self.assertTrue(self.client.post(reverse("delete_comment", args=[comment.pk])).json()["success"])
+        self.assertFalse(Comment.objects.exists())
+
+    def test_other_user_cannot_edit_or_delete(self):
+        comment = self.comment()
+        self.client.force_login(self.ann)
+        self.assertEqual(self.client.post(reverse("edit_comment", args=[comment.pk]), {"text": "x"}).status_code, 403)
+        self.assertEqual(self.client.post(reverse("delete_comment", args=[comment.pk])).status_code, 403)
+        self.assertEqual(Comment.objects.get().text, "Great film")
+
+    def test_edit_to_empty_text_is_rejected(self):
+        comment = self.comment()
+        self.client.force_login(self.bob)
+        response = self.client.post(reverse("edit_comment", args=[comment.pk]), {"text": ""})
+        self.assertEqual(response.status_code, 400)
+
+    def test_deleting_comment_removes_replies(self):
+        top = self.comment()
+        self.comment(user=self.ann, text="Reply", parent=top)
+        self.client.force_login(self.bob)
+        self.client.post(reverse("delete_comment", args=[top.pk]))
+        self.assertFalse(Comment.objects.exists())
+
+    def test_detail_page_shows_comments_and_buttons(self):
+        top = self.comment(text="<b>bold</b>")
+        self.comment(user=self.ann, text="Reply text", parent=top)
+        self.client.force_login(self.ann)
+        response = self.client.get(self.movie.get_absolute_url())
+        self.assertContains(response, "&lt;b&gt;bold&lt;/b&gt;")
+        self.assertContains(response, "Reply text")
+        self.assertContains(response, 'class="edit-button"', count=1)
+
+    def test_detail_page_empty_and_guest(self):
+        response = self.client.get(self.movie.get_absolute_url())
+        self.assertContains(response, "Коментарів поки немає")
+        self.assertContains(response, "щоб залишити коментар")
+        self.assertNotContains(response, "reply-button")
+
+    def test_admin_changelist_opens(self):
+        admin = User.objects.create_superuser("admin", "admin@example.com", "pass")
+        self.comment(text="Admin sees this")
+        self.client.force_login(admin)
+        response = self.client.get(reverse("admin:interactions_comment_changelist"))
+        self.assertContains(response, "Admin sees this")

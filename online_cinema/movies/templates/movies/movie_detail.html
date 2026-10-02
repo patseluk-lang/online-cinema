@@ -89,6 +89,33 @@
         {% endfor %}
     </div>
 </section>
+
+<section class="comments-section" id="comments">
+    <h2>💬 Коментарі</h2>
+
+    {% if user.is_authenticated %}
+        <form class="comment-form" method="post" action="{% url 'add_comment' movie.pk %}">
+            {% csrf_token %}
+            <textarea name="text" rows="4" maxlength="2000" placeholder="Напишіть свій коментар..." required></textarea>
+            <button type="submit" class="button">💬 Додати коментар</button>
+        </form>
+    {% else %}
+        <div class="comment-login-message">
+            🔐 <a href="{% url 'login' %}?next={{ request.path|urlencode }}%23comments">Увійдіть</a>, щоб залишити коментар
+        </div>
+    {% endif %}
+
+    <div class="comments-list">
+        {% for comment in comments %}
+            {% include "movies/_comment.html" %}
+        {% empty %}
+            <div class="empty-state comments-empty">
+                <h3>💬 Коментарів поки немає</h3>
+                <p>Будьте першим, хто залишить коментар!</p>
+            </div>
+        {% endfor %}
+    </div>
+</section>
 {% endblock %}
 
 {% block extra_js %}
@@ -173,6 +200,130 @@
                 star.classList.toggle("active", Number(star.dataset.rating) <= data.value);
             });
         });
+    });
+
+    // Comments: reply, edit and delete. Forms are built with DOM methods so user text is never parsed as HTML.
+    function makeTextarea(value, placeholder) {
+        const textarea = document.createElement("textarea");
+        textarea.name = "text";
+        textarea.rows = 3;
+        textarea.maxLength = 2000;
+        textarea.required = true;
+        textarea.placeholder = placeholder;
+        textarea.value = value;
+        return textarea;
+    }
+
+    function makeButton(text, className, type = "button") {
+        const button = document.createElement("button");
+        button.type = type;
+        button.className = className;
+        button.textContent = text;
+        return button;
+    }
+
+    async function postComment(url, text) {
+        const formData = new FormData();
+        formData.append("text", text);
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {"X-CSRFToken": csrfToken},
+            body: formData,
+        });
+        return response.json();
+    }
+
+    function openReplyForm(comment) {
+        const container = comment.querySelector(":scope > .reply-form-container");
+        if (container.firstChild) {
+            container.replaceChildren();
+            return;
+        }
+
+        const form = document.createElement("form");
+        form.className = "reply-form";
+        const textarea = makeTextarea("", "Ваша відповідь...");
+        const actions = document.createElement("div");
+        actions.className = "reply-form-actions";
+        const cancel = makeButton("Скасувати", "cancel-reply");
+        actions.append(makeButton("💬 Відповісти", "button", "submit"), cancel);
+        form.append(textarea, actions);
+        container.append(form);
+        textarea.focus();
+
+        cancel.addEventListener("click", () => container.replaceChildren());
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const data = await postComment(`/interactions/comment/{{ movie.pk }}/reply/${comment.dataset.commentId}/`, textarea.value);
+            if (data.success) {
+                window.location.hash = "comments";
+                window.location.reload();
+            } else {
+                alert(data.error);
+            }
+        });
+    }
+
+    function openEditForm(comment) {
+        const textElement = comment.querySelector(":scope > .comment-text");
+        const container = comment.querySelector(":scope > .comment-edit-form");
+        if (container.firstChild) return;
+
+        const form = document.createElement("form");
+        form.className = "edit-comment-form";
+        const textarea = makeTextarea(textElement.textContent, "");
+        textarea.rows = 4;
+        const actions = document.createElement("div");
+        actions.className = "edit-form-actions";
+        const cancel = makeButton("Скасувати", "cancel-edit");
+        actions.append(makeButton("💾 Зберегти", "button", "submit"), cancel);
+        form.append(textarea, actions);
+        container.append(form);
+        textElement.hidden = true;
+        textarea.focus();
+
+        const close = () => {
+            container.replaceChildren();
+            textElement.hidden = false;
+        };
+        cancel.addEventListener("click", close);
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const data = await postComment(`/interactions/comment/${comment.dataset.commentId}/edit/`, textarea.value);
+            if (data.success) {
+                textElement.textContent = data.text;
+                close();
+            } else {
+                alert(data.error);
+            }
+        });
+    }
+
+    async function deleteComment(comment) {
+        if (!confirm("Видалити цей коментар?")) return;
+        const response = await fetch(`/interactions/comment/${comment.dataset.commentId}/delete/`, {
+            method: "POST",
+            headers: {"X-CSRFToken": csrfToken},
+        });
+        const data = await response.json();
+        if (!data.success) {
+            alert(data.error);
+            return;
+        }
+        // Replies live inside their parent's card, so removing a comment also removes its replies.
+        comment.remove();
+        if (!document.querySelector(".comments-list .comment")) {
+            window.location.reload();
+        }
+    }
+
+    document.querySelector(".comments-list").addEventListener("click", (event) => {
+        const button = event.target.closest("button");
+        if (!button) return;
+        const comment = button.closest(".comment");
+        if (button.classList.contains("reply-button")) openReplyForm(comment);
+        if (button.classList.contains("edit-button")) openEditForm(comment);
+        if (button.classList.contains("delete-button")) deleteComment(comment);
     });
 </script>
 {% endif %}

@@ -1,0 +1,25 @@
+<article class="comment{% if comment.parent_id %} reply{% endif %}" data-comment-id="{{ comment.pk }}">
+    <div class="comment-header">
+        <strong>👤 {{ comment.user.username }}</strong>
+        <span class="comment-date">{{ comment.created_at|date:"d.m.Y H:i" }}</span>
+    </div>
+    <div class="comment-text">{{ comment.text }}</div>
+    <div class="comment-edit-form"></div>
+    {% if user.is_authenticated %}
+    <div class="comment-actions">
+        <button type="button" class="reply-button" data-comment-id="{{ comment.pk }}">💬 Відповісти</button>
+        {% if user == comment.user %}
+            <button type="button" class="edit-button" data-comment-id="{{ comment.pk }}">✏️ Редагувати</button>
+            <button type="button" class="delete-button" data-comment-id="{{ comment.pk }}">🗑️ Видалити</button>
+        {% endif %}
+    </div>
+    <div class="reply-form-container"></div>
+    {% endif %}
+    {% if not comment.parent_id and comment.replies.all %}
+    <div class="replies">
+        {% for reply in comment.replies.all %}
+            {% include "movies/_comment.html" with comment=reply %}
+        {% endfor %}
+    </div>
+    {% endif %}
+</article>

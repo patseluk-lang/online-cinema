@@ -5,7 +5,8 @@ from django.views.decorators.http import require_GET, require_POST
 
 from movies.models import Movie
 
-from .models import Favorite, Rating, WatchHistory, rating_summary
+from .forms import CommentForm
+from .models import Comment, Favorite, Rating, WatchHistory, rating_summary
 
 
 def demo_watch_seconds(movie):
@@ -70,3 +71,71 @@ def rate_movie(request, movie_id):
         "created": created,
         **rating_summary(movie),
     })
+
+
+def comments_url(movie):
+    return f"{movie.get_absolute_url()}#comments"
+
+
+@login_required
+@require_POST
+def add_comment(request, movie_id):
+    movie = get_object_or_404(Movie, pk=movie_id)
+    form = CommentForm(request.POST)
+    if form.is_valid():
+        form.instance.user = request.user
+        form.instance.movie = movie
+        form.save()
+    return redirect(comments_url(movie))
+
+
+@login_required
+@require_POST
+def add_reply(request, movie_id, comment_id):
+    movie = get_object_or_404(Movie, pk=movie_id)
+    parent = get_object_or_404(Comment, pk=comment_id, movie=movie)
+    form = CommentForm(request.POST)
+    if not form.is_valid():
+        return JsonResponse({"success": False, "error": "Відповідь не може бути порожньою."}, status=400)
+
+    form.instance.user = request.user
+    form.instance.movie = movie
+    # Replies stay one level deep: answering a reply attaches to the same top-level comment.
+    form.instance.parent = parent.parent or parent
+    form.save()
+    return JsonResponse({"success": True})
+
+
+def own_comment_or_error(request, comment_id, action):
+    comment = get_object_or_404(Comment, pk=comment_id)
+    if comment.user != request.user:
+        return None, JsonResponse(
+            {"success": False, "error": f"Ви не можете {action} цей коментар."}, status=403
+        )
+    return comment, None
+
+
+@login_required
+@require_POST
+def edit_comment(request, comment_id):
+    comment, error = own_comment_or_error(request, comment_id, "редагувати")
+    if error:
+        return error
+
+    form = CommentForm(request.POST, instance=comment)
+    if not form.is_valid():
+        return JsonResponse({"success": False, "error": "Коментар не може бути порожнім."}, status=400)
+
+    comment = form.save()
+    return JsonResponse({"success": True, "text": comment.text})
+
+
+@login_required
+@require_POST
+def delete_comment(request, comment_id):
+    comment, error = own_comment_or_error(request, comment_id, "видалити")
+    if error:
+        return error
+
+    comment.delete()
+    return JsonResponse({"success": True})

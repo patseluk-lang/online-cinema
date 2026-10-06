@@ -100,38 +100,65 @@ a {
     flex-wrap: wrap;
     gap: 12px;
     align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: 20px;
+    padding: 20px;
+    background: white;
+    border-radius: 14px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
 }
 
 .filters input,
 .filters select,
-.filters button {
+.filters button,
+.filters .reset {
+    height: 44px;
     font: inherit;
-    padding: 8px 12px;
-    border: 1px solid #444;
-    border-radius: 8px;
-    background: #111;
-    color: #f5f5f5;
+    font-size: 14px;
+    padding: 0 14px;
+    border: 1px solid #ddd;
+    border-radius: 9px;
+    background: white;
+    color: #333;
 }
 
 .filters input {
-    flex: 1 1 240px;
+    flex: 1 1 250px;
 }
 
-.filters button {
-    background: white;
-    color: #111;
-    border-color: white;
+.filters input:focus,
+.filters select:focus {
+    border-color: #999;
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+}
+
+.filters select {
     cursor: pointer;
 }
 
-.filters button:hover {
-    opacity: 0.85;
+.filters button {
+    padding: 0 20px;
+    background: #222;
+    border-color: #222;
+    color: white;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
 }
 
-.reset {
-    color: #aaa;
-    text-decoration: underline;
+.filters button:hover {
+    background: #444;
+    transform: translateY(-1px);
+}
+
+.filters .reset {
+    display: inline-flex;
+    align-items: center;
+    border-color: #f0f0f0;
+    background: #f0f0f0;
+    color: #444;
+}
+
+.filters .reset:hover {
+    background: #e4e4e4;
 }
 
 .count {
@@ -200,15 +227,65 @@ a {
 
 .pagination {
     display: flex;
+    flex-wrap: wrap;
     justify-content: center;
     align-items: center;
-    gap: 20px;
+    gap: 8px;
     margin-top: 40px;
-    color: #aaa;
 }
 
-.pagination a {
+.pagination-button {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    min-width: 40px;
+    height: 40px;
+    padding: 0 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: white;
+    color: #333;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.pagination-button:hover {
+    background: #d1d1d1;
+    border-color: #ccc;
+}
+
+.pagination-button.active {
+    background: #111;
+    border-color: #494949;
     color: white;
+    cursor: default;
+}
+
+.pagination-ellipsis {
+    color: #aaa;
+    padding: 0 4px;
+}
+
+/* RECOMMENDATIONS */
+
+.recommendations {
+    margin: 50px 0;
+}
+
+.page-header + .recommendations {
+    margin-top: 0;
+}
+
+.section-header {
+    margin-bottom: 25px;
+}
+
+.section-header h2 {
+    margin: 0;
+}
+
+.section-header p {
+    margin: 6px 0 0;
+    color: #aaa;
 }
 
 /* MOVIE DETAIL */
@@ -668,30 +745,72 @@ a {
 /* AUTH */
 
 .auth-box {
-    max-width: 420px;
+    max-width: 430px;
+    margin: 20px auto;
     background: white;
     color: #333;
-    padding: 30px;
+    padding: 35px;
     border-radius: 16px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.08);
 }
 
-.auth-box h1 {
-    margin-top: 0;
+.auth-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.auth-header h1 {
+    margin: 0 0 8px;
+    font-size: 28px;
+    color: #222;
+}
+
+.auth-header p {
+    margin: 0;
+    color: #777;
+}
+
+.auth-box form p {
+    margin: 0 0 18px;
 }
 
 .auth-box label {
     display: block;
-    margin-bottom: 4px;
-    font-weight: bold;
+    margin-bottom: 7px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
 }
 
 .auth-box input {
     width: 100%;
-    padding: 10px 12px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
+    height: 46px;
+    padding: 0 14px;
+    border: 1px solid #ddd;
+    border-radius: 9px;
     font: inherit;
+    font-size: 14px;
+    color: #222;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.auth-box input:focus {
+    border-color: #888;
+    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+}
+
+.auth-box form .button {
+    width: 100%;
+    height: 46px;
+    margin-top: 5px;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.auth-box > p {
+    margin: 20px 0 0;
+    text-align: center;
+    color: #666;
 }
 
 .auth-box .helptext,
@@ -703,6 +822,8 @@ a {
 }
 
 .auth-box a {
+    color: #222;
+    font-weight: 600;
     text-decoration: underline;
 }
 

@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404, render
 from interactions.models import rating_summary
 
 from .models import Actor, Genre, Movie
+from .recommendations import get_similar_movies, get_user_recommendations
 
 MOVIES_PER_PAGE = 24
 
@@ -37,8 +38,15 @@ def movie_list(request):
     filters = request.GET.copy()
     filters.pop("page", None)
 
+    # Personal picks only on the first page of the full catalogue, not above search results.
+    recommendations = []
+    if request.user.is_authenticated and page.number == 1 and not (query or genre_id or sort):
+        recommendations = get_user_recommendations(request.user)
+
     return render(request, "movies/movie_list.html", {
         "page": page,
+        "page_range": page.paginator.get_elided_page_range(page.number, on_each_side=2, on_ends=1),
+        "recommendations": recommendations,
         "genres": Genre.objects.all(),
         "query": query,
         "genre_id": genre_id,
@@ -65,6 +73,7 @@ def movie_detail(request, pk):
         "user_rating": user_rating,
         "comments": movie.comments.filter(parent__isnull=True)
         .select_related("user").prefetch_related("replies__user"),
+        "similar_movies": get_similar_movies(movie),
     })
 
 

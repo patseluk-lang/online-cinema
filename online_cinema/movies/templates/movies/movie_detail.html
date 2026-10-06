@@ -90,6 +90,20 @@
     </div>
 </section>
 
+<section class="recommendations">
+    <div class="section-header">
+        <h2>🎬 Вам також може сподобатися</h2>
+        <p>Фільми, схожі на цей</p>
+    </div>
+    <div class="movie-grid">
+        {% for movie in similar_movies %}
+            {% include "movies/_card.html" %}
+        {% empty %}
+            <p class="empty">Поки що немає схожих фільмів</p>
+        {% endfor %}
+    </div>
+</section>
+
 <section class="comments-section" id="comments">
     <h2>💬 Коментарі</h2>
 

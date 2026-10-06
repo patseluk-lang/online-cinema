@@ -205,3 +205,66 @@ class AdminTests(TestCase):
     def test_search_movie_by_actor_name(self):
         response = self.client.get(reverse("admin:movies_movie_changelist"), {"q": "Jane"})
         self.assertContains(response, "Quiet Harbor")
+
+
+class RecommendationTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        from interactions.models import WatchHistory
+
+        drama = Genre.objects.create(name="Drama")
+        comedy = Genre.objects.create(name="Comedy")
+        actor = Actor.objects.create(name="Jane Doe")
+        cls.watched = Movie.objects.create(title="Watched Drama", year=2025, genre=drama)
+        cls.same_genre_and_actor = Movie.objects.create(title="Drama With Jane", year=2010, genre=drama)
+        cls.same_genre = Movie.objects.create(title="Plain Drama", year=2010, genre=drama)
+        cls.unrelated = Movie.objects.create(title="Old Comedy", year=1990, genre=comedy)
+        cls.watched.actors.add(actor)
+        cls.same_genre_and_actor.actors.add(actor)
+
+        cls.user = get_user_model().objects.create_user("viewer", password="StrongPass123!")
+        WatchHistory.objects.create(user=cls.user, movie=cls.watched)
+
+    def test_similar_movies_are_ranked_by_score(self):
+        from .recommendations import get_similar_movies
+
+        self.assertEqual(
+            get_similar_movies(self.watched),
+            [self.same_genre_and_actor, self.same_genre],
+        )
+
+    def test_movie_detail_shows_similar_movies(self):
+        response = self.client.get(self.watched.get_absolute_url())
+        self.assertContains(response, "Вам також може сподобатися")
+        self.assertContains(response, "Drama With Jane")
+        self.assertNotContains(response, "Old Comedy")
+
+    def test_user_recommendations_skip_watched_movies(self):
+        from .recommendations import get_user_recommendations
+
+        recommendations = get_user_recommendations(self.user)
+        self.assertEqual(recommendations[0], self.same_genre_and_actor)
+        self.assertNotIn(self.watched, recommendations)
+        self.assertNotIn(self.unrelated, recommendations)
+
+    def test_user_without_history_gets_no_recommendations(self):
+        from .recommendations import get_user_recommendations
+
+        other = get_user_model().objects.create_user("newcomer", password="StrongPass123!")
+        self.assertEqual(get_user_recommendations(other), [])
+
+    def test_catalogue_shows_recommendations_only_to_logged_in_user(self):
+        self.assertNotContains(self.client.get(reverse("movie_list")), "✨ Рекомендації")
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("movie_list"))
+        self.assertContains(response, "✨ Рекомендації")
+        self.assertNotContains(self.client.get(reverse("movie_list"), {"q": "drama"}), "✨ Рекомендації")
+
+    def test_recommendations_use_few_queries(self):
+        from .recommendations import get_similar_movies
+
+        Movie.objects.bulk_create(
+            Movie(title=f"Filler {i}", year=2025, genre=self.watched.genre) for i in range(30)
+        )
+        with self.assertNumQueries(3):
+            get_similar_movies(self.watched)

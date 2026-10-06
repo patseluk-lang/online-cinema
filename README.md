@@ -8,6 +8,7 @@ A Django catalogue of movies currently in theaters. An async scraper collects mo
 
 - Movie catalogue with title search, genre filter, sorting (newest, oldest, shortest, longest) and pagination
 - Movie pages with description, runtime and cast
+- Recommendations: "similar movies" on every movie page (shared genre, actors and release year) and personal picks in the catalogue based on the user's watch history
 - User accounts: registration (with password validation), login, logout
 - Favorites: logged-in users add or remove movies from favorites on the movie page and see them in their profile
 - Movie ratings from 1 to 5 stars with the average score and number of votes (AJAX, no page reload)
@@ -18,7 +19,7 @@ A Django catalogue of movies currently in theaters. An async scraper collects mo
 - Idempotent import: re-running it updates existing records instead of duplicating them
 - Actors and movies are matched by their source URL, so namesakes stay separate
 - Django admin with poster previews, movie and actor counts, search (including by actor name) and filters
-- Test suite for the importer, all views, accounts, favorites, ratings, watch history, comments and the admin
+- Test suite for the importer, all views, accounts, favorites, ratings, watch history, comments, recommendations and the admin
 
 ## Tech stack
 

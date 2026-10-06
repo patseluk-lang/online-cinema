@@ -6,6 +6,18 @@
     <p>Знайди свій фільм</p>
 </section>
 
+{% if recommendations %}
+<section class="recommendations">
+    <div class="section-header">
+        <h2>✨ Рекомендації</h2>
+        <p>Фільми, які можуть вам сподобатися</p>
+    </div>
+    <div class="movie-grid">
+        {% for movie in recommendations %}{% include "movies/_card.html" %}{% endfor %}
+    </div>
+</section>
+{% endif %}
+
 <form class="filters" method="get">
     <input type="search" name="q" value="{{ query }}" placeholder="Search movie..." aria-label="Search movie">
     <select name="genre" aria-label="Genre">
@@ -17,7 +29,7 @@
         {% for key, label in sort_options %}<option value="{{ key }}"{% if sort == key %} selected{% endif %}>{{ label }}</option>{% endfor %}
     </select>
     <button type="submit">Search</button>
-    {% if query or genre_id or sort %}<a class="reset" href="{% url 'movie_list' %}">Скинути фільтри</a>{% endif %}
+    {% if query or genre_id or sort %}<a class="reset" href="{% url 'movie_list' %}">Reset</a>{% endif %}
 </form>
 
 <p class="count">Знайдено фільмів: {{ page.paginator.count }}</p>
@@ -32,9 +44,13 @@
 
 {% if page.has_other_pages %}
 <nav class="pagination" aria-label="Сторінки">
-    {% if page.has_previous %}<a href="?{{ filters }}{% if filters %}&amp;{% endif %}page={{ page.previous_page_number }}">← Назад</a>{% endif %}
-    <span>Сторінка {{ page.number }} з {{ page.paginator.num_pages }}</span>
-    {% if page.has_next %}<a href="?{{ filters }}{% if filters %}&amp;{% endif %}page={{ page.next_page_number }}">Далі →</a>{% endif %}
+    {% if page.has_previous %}<a class="pagination-button" href="?{{ filters }}{% if filters %}&amp;{% endif %}page={{ page.previous_page_number }}" aria-label="Попередня сторінка">←</a>{% endif %}
+    {% for number in page_range %}
+        {% if number == page.number %}<span class="pagination-button active" aria-current="page">{{ number }}</span>
+        {% elif number == page.paginator.ELLIPSIS %}<span class="pagination-ellipsis">{{ number }}</span>
+        {% else %}<a class="pagination-button" href="?{{ filters }}{% if filters %}&amp;{% endif %}page={{ number }}">{{ number }}</a>{% endif %}
+    {% endfor %}
+    {% if page.has_next %}<a class="pagination-button" href="?{{ filters }}{% if filters %}&amp;{% endif %}page={{ page.next_page_number }}" aria-label="Наступна сторінка">→</a>{% endif %}
 </nav>
 {% endif %}
 {% endblock %}

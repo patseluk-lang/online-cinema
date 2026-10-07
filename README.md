@@ -98,7 +98,7 @@ The EC2 security group allows HTTP from anywhere and SSH only from the owner's I
 
 ## Admin panel
 
-The Django admin is available at `/admin/` (locally http://127.0.0.1:8000/admin/, on the live demo http://16.170.202.127/admin/). It is not linked from the site header. Regular users see only their own data in the profile; the admin shows the whole site: movies, actors, genres and every user's favorites, ratings, watch history and comments.
+The Django admin is available at `/admin/` (locally http://127.0.0.1:8000/admin/, on the live demo http://16.170.202.127/admin/). It is not linked from the site header. There is no public admin account: logging in is possible only through the author. Regular users see only their own data in the profile; the admin shows the whole site: movies, actors, genres and every user's favorites, ratings, watch history and comments.
 
 Create an admin account locally:
 

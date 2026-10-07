@@ -18,7 +18,7 @@ A Django catalogue of movies currently in theaters. An async scraper collects mo
 - Actor pages listing every movie of that actor in the catalogue
 - Idempotent import: re-running it updates existing records instead of duplicating them
 - Actors and movies are matched by their source URL, so namesakes stay separate
-- Django admin with poster previews, movie and actor counts, search (including by actor name) and filters
+- Django admin at `/admin/` with poster previews, movie and actor counts, search (including by actor name) and filters; staff see every user's favorites, ratings, watch history and comments
 - Test suite for the importer, all views, accounts, favorites, ratings, watch history, comments, recommendations and the admin
 
 ## Tech stack
@@ -95,6 +95,23 @@ sudo docker compose up -d --build
 ```
 
 The EC2 security group allows HTTP from anywhere and SSH only from the owner's IP address.
+
+## Admin panel
+
+The Django admin is available at `/admin/` (locally http://127.0.0.1:8000/admin/, on the live demo http://16.170.202.127/admin/). It is not linked from the site header. Regular users see only their own data in the profile; the admin shows the whole site: movies, actors, genres and every user's favorites, ratings, watch history and comments.
+
+Create an admin account locally:
+
+```bash
+cd online_cinema
+python manage.py createsuperuser
+```
+
+On the server (Docker Compose):
+
+```bash
+sudo docker compose exec web python manage.py createsuperuser
+```
 
 ## Run tests
 
